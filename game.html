@@ -899,11 +899,35 @@
             isOpaque = !isOpaque;
             Object.values(pieceMeshes).forEach(mesh => {
                 if (isOpaque) {
+                    // Opaque mode - also reveal inner pieces
                     mesh.material.transmission = 0;
                     mesh.material.opacity = 1.0;
+                    mesh.material.emissiveIntensity = 0.3;
                 } else {
+                    // Transparent mode - restore original visibility settings
                     mesh.material.transmission = 0.9;
-                    mesh.material.opacity = 1.0;
+
+                    // Check if piece is hidden in a stack
+                    const piece = game.getPiece(mesh.userData.pieceId);
+                    if (piece && piece.location === 'board') {
+                        const [row, col] = piece.boardPosition;
+                        const stack = game.board[row][col];
+                        const index = stack.findIndex(p => p.id === piece.id);
+
+                        if (index < stack.length - 1) {
+                            // Hidden piece - keep dimmed
+                            mesh.material.opacity = 0.3;
+                            mesh.material.emissiveIntensity = 0.1;
+                        } else {
+                            // Top piece - full brightness
+                            mesh.material.opacity = 1.0;
+                            mesh.material.emissiveIntensity = 0.3;
+                        }
+                    } else {
+                        // Not on board (in reserve) - full brightness
+                        mesh.material.opacity = 1.0;
+                        mesh.material.emissiveIntensity = 0.3;
+                    }
                 }
             });
         }
