@@ -622,9 +622,7 @@
             const x = (targetCol - 1) * cellSize;
             const z = (targetRow - 1) * cellSize;
 
-            // Board surface is at Y = 0
-            const boardSurfaceY = 0;
-
+            // Board top surface is at Y = 0
             // Calculate total height of pieces already in the stack
             const stack = gameState.board[targetRow][targetCol];
             let stackHeight = 0;
@@ -632,9 +630,9 @@
                 stackHeight += getPieceHeight(stack[i].size);
             }
 
-            // Position piece so its bottom sits on top of the stack
-            // Pieces are centered on their geometry, so Y position = stack height + half of this piece's height
-            const y = boardSurfaceY + stackHeight + getPieceHeight(piece.size) / 2;
+            // Piece geometry is centered at origin, so to place bottom at Y=0:
+            // Y position = half of piece height (to lift center above bottom)
+            const y = stackHeight + getPieceHeight(piece.size) / 2;
 
             const duration = 800;
             const startTime = Date.now();
