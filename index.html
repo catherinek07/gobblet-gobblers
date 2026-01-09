@@ -630,9 +630,8 @@
                 stackHeight += getPieceHeight(stack[i].size);
             }
 
-            // Piece geometry is centered at origin, so to place bottom at Y=0:
-            // Y position = half of piece height (to lift center above bottom)
-            const y = stackHeight + getPieceHeight(piece.size) / 2;
+            // Place piece directly on board - Y=0 should place bottom at board surface
+            const y = stackHeight;
 
             const duration = 800;
             const startTime = Date.now();
