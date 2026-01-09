@@ -539,12 +539,17 @@
         function showValidCells(piece) {
             clearValidCellIndicators();
 
+            // Get the bottom radius for the piece size
+            const bottomRadius = piece.size === SIZE_SMALL ? 0.35 : (piece.size === SIZE_MEDIUM ? 0.65 : 0.95);
+            const innerRadius = bottomRadius - 0.1;
+            const outerRadius = bottomRadius + 0.1;
+
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
                     if (gameState.isValidMove(piece, row, col)) {
                         const cellMesh = cellMeshes[row][col];
 
-                        const geometry = new THREE.RingGeometry(0.6, 0.8, 32);
+                        const geometry = new THREE.RingGeometry(innerRadius, outerRadius, 32);
                         const material = new THREE.MeshBasicMaterial({
                             color: piece.player === PLAYER_ORANGE ? 0xff6b35 : 0x4ecdc4,
                             transparent: true,
