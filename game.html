@@ -631,6 +631,13 @@
         function handlePieceClick(pieceId) {
             const piece = game.getPiece(pieceId);
 
+            // If we have a piece selected and clicked on opponent's piece, treat it as clicking the cell
+            if (game.selectedPiece && piece.player !== game.currentPlayer && piece.location === 'board') {
+                const [row, col] = piece.boardPosition;
+                handleCellClick(row, col);
+                return;
+            }
+
             // Can only select current player's pieces
             if (piece.player !== game.currentPlayer) return;
 
