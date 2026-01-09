@@ -550,9 +550,9 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * 6,
+                    side * 6 + pieceIndex * 1.5,  // Space pieces horizontally
                     config.height / 2,
-                    -2 + sizeIndex * 2 + pieceIndex * 0.5
+                    -2 + sizeIndex * 2
                 );
 
                 scene.add(mesh);
@@ -877,9 +877,9 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * 6,
+                    side * 6 + pieceIndex * 1.5,  // Space pieces horizontally
                     sizeConfigs[piece.size].height / 2,
-                    -2 + sizeIndex * 2 + pieceIndex * 0.5
+                    -2 + sizeIndex * 2
                 );
             });
 
