@@ -345,7 +345,7 @@
 
         const game = new GameState();
         let scene, camera, renderer, controls;
-        let boardGroup, pieceMeshes = {};
+        let boardGroup, pieceMeshes = {}, cellMeshes = {};
         let raycaster, mouse;
         let hoveredObject = null;
         let isDragging = false;
@@ -498,6 +498,7 @@
                     );
                     cellMesh.userData = { type: 'cell', row, col };
                     boardGroup.add(cellMesh);
+                    cellMeshes[`${row}-${col}`] = cellMesh;
                 }
             }
 
@@ -657,6 +658,7 @@
                 if (prevMesh) {
                     prevMesh.material.emissiveIntensity = 0.3;
                 }
+                clearCellHighlights();
             }
 
             // Select new piece
@@ -664,6 +666,9 @@
             const mesh = pieceMeshes[pieceId];
             mesh.material.emissiveIntensity = 0.8;
             updateStatusMessage("Choose where to place this piece");
+
+            // Highlight valid target cells
+            highlightValidCells(piece);
         }
 
         function handleCellClick(row, col) {
@@ -731,6 +736,9 @@
                     mesh.material.emissiveIntensity = 0.3;
                     game.selectedPiece = null;
 
+                    // Clear cell highlights
+                    clearCellHighlights();
+
                     // Check for winner
                     const winner = game.checkWinner();
                     if (winner) {
@@ -758,6 +766,31 @@
             }
 
             animate();
+        }
+
+        function highlightValidCells(piece) {
+            // Clear any previous highlights
+            clearCellHighlights();
+
+            // Check each cell and highlight if valid
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    if (game.isValidMove(piece, row, col)) {
+                        const cellMesh = cellMeshes[`${row}-${col}`];
+                        cellMesh.material.opacity = 0.3;
+                        cellMesh.material.color.setHex(0x00ff00); // Green glow
+                        cellMesh.material.emissive = new THREE.Color(0x00ff00);
+                        cellMesh.material.emissiveIntensity = 0.5;
+                    }
+                }
+            }
+        }
+
+        function clearCellHighlights() {
+            Object.values(cellMeshes).forEach(cellMesh => {
+                cellMesh.material.opacity = 0;
+                cellMesh.material.emissiveIntensity = 0;
+            });
         }
 
         function updateStackVisibility(row, col) {
