@@ -470,7 +470,7 @@
         function initializePieces() {
             const reserveOffsetX = 8;
             const reserveZ = 0;
-            const spacing = 1.2;
+            const spacing = 1.6;
 
             // Orange pieces (left side)
             gameState.reserves[PLAYER_ORANGE].forEach((piece, index) => {
@@ -479,7 +479,10 @@
 
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                mesh.position.set(-reserveOffsetX - col * spacing, 0.5, -2 + row * spacing);
+
+                // Position based on piece size to avoid clipping through board
+                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                mesh.position.set(-reserveOffsetX - col * spacing, heightOffset, -2 + row * spacing);
 
                 scene.add(mesh);
             });
@@ -491,7 +494,10 @@
 
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                mesh.position.set(reserveOffsetX + col * spacing, 0.5, -2 + row * spacing);
+
+                // Position based on piece size to avoid clipping through board
+                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                mesh.position.set(reserveOffsetX + col * spacing, heightOffset, -2 + row * spacing);
 
                 scene.add(mesh);
             });
@@ -791,12 +797,13 @@
 
             // Reset all piece positions
             const reserveOffsetX = 8;
-            const spacing = 1.2;
+            const spacing = 1.6;
 
             gameState.reserves[PLAYER_ORANGE].forEach((piece, index) => {
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                piece.mesh.position.set(-reserveOffsetX - col * spacing, 0.5, -2 + row * spacing);
+                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                piece.mesh.position.set(-reserveOffsetX - col * spacing, heightOffset, -2 + row * spacing);
                 piece.mesh.visible = true;
                 piece.mesh.material.opacity = 0.95;
                 unhighlightPiece(piece.mesh);
@@ -805,7 +812,8 @@
             gameState.reserves[PLAYER_BLUE].forEach((piece, index) => {
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                piece.mesh.position.set(reserveOffsetX + col * spacing, 0.5, -2 + row * spacing);
+                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                piece.mesh.position.set(reserveOffsetX + col * spacing, heightOffset, -2 + row * spacing);
                 piece.mesh.visible = true;
                 piece.mesh.material.opacity = 0.95;
                 unhighlightPiece(piece.mesh);
