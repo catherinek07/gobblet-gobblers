@@ -550,7 +550,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * 6 + pieceIndex * 1.5,  // Space pieces horizontally
+                    side * 6 + pieceIndex * 2.0,  // Space pieces horizontally (increased from 1.5 to 2.0)
                     config.height / 2,
                     -2 + sizeIndex * 2
                 );
@@ -884,7 +884,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * 6 + pieceIndex * 1.5,  // Space pieces horizontally
+                    side * 6 + pieceIndex * 2.0,  // Space pieces horizontally (increased from 1.5 to 2.0)
                     sizeConfigs[piece.size].height / 2,
                     -2 + sizeIndex * 2
                 );
