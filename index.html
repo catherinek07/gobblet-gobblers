@@ -699,8 +699,10 @@
 
             const piece = gameState.selectedPiece;
 
-            // Check if trying to move to same location
+            // Remember source location before moving (needed later for updating visibility)
             const currentLoc = gameState.getPieceLocation(piece);
+
+            // Check if trying to move to same location
             if (currentLoc && currentLoc.row === row && currentLoc.col === col) {
                 updateStatus("Cannot stay in the same place!");
                 return;
@@ -721,9 +723,6 @@
 
             unhighlightPiece(piece.mesh);
             clearValidCellIndicators();
-
-            // Remember source location before moving
-            const currentLoc = gameState.getPieceLocation(piece);
 
             gameState.movePiece(piece, row, col);
 
