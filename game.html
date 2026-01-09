@@ -681,23 +681,13 @@
             const targetX = -2 + targetCol * 2;
             const targetZ = -2 + targetRow * 2;
 
-            // Calculate target Y based on stack height
-            const stack = game.board[targetRow][targetCol];
-            const stackHeight = stack.reduce((sum, p) => {
-                const config = {
-                    [PIECE_SIZES.SMALL]: 0.5,
-                    [PIECE_SIZES.MEDIUM]: 0.7,
-                    [PIECE_SIZES.LARGE]: 0.9
-                };
-                return sum + config[p.size];
-            }, 0);
-
+            // Calculate target Y - pieces nest at ground level, not stack
             const pieceConfig = {
                 [PIECE_SIZES.SMALL]: 0.5,
                 [PIECE_SIZES.MEDIUM]: 0.7,
                 [PIECE_SIZES.LARGE]: 0.9
             };
-            const targetY = stackHeight + pieceConfig[piece.size] / 2;
+            const targetY = pieceConfig[piece.size] / 2;
 
             // Animate movement
             const startPos = mesh.position.clone();
