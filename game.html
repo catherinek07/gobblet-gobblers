@@ -713,11 +713,19 @@
                 if (progress >= 1) {
                     mesh.position.copy(endPos);
 
+                    // Store old position before moving
+                    const oldPosition = piece.location === 'board' ? [...piece.boardPosition] : null;
+
                     // Update game state
                     game.movePiece(piece, targetRow, targetCol);
 
-                    // Update hidden pieces in stack
+                    // Update hidden pieces in target stack
                     updateStackVisibility(targetRow, targetCol);
+
+                    // Update old position stack (reveal piece underneath if any)
+                    if (oldPosition) {
+                        updateStackVisibility(oldPosition[0], oldPosition[1]);
+                    }
 
                     // Clear selection
                     mesh.material.emissiveIntensity = 0.3;
@@ -757,12 +765,14 @@
             stack.forEach((piece, index) => {
                 const mesh = pieceMeshes[piece.id];
                 if (index < stack.length - 1) {
-                    // Hidden pieces
+                    // Hidden pieces - dimmed
                     mesh.material.opacity = 0.3;
+                    mesh.material.emissiveIntensity = 0.1;
                     mesh.visible = true;
                 } else {
-                    // Top piece
+                    // Top piece - full brightness
                     mesh.material.opacity = 1.0;
+                    mesh.material.emissiveIntensity = 0.3;
                     mesh.visible = true;
                 }
             });
