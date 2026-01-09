@@ -636,9 +636,15 @@
                 piece.mesh.visible = isTop || index === stack.length - 2;
 
                 if (!isTop && piece.mesh.visible) {
+                    // Covered piece - dim it
                     piece.mesh.material.opacity = 0.3;
                 } else if (isTop) {
-                    piece.mesh.material.opacity = 0.95;
+                    // Top piece - restore normal opacity based on transparency mode
+                    if (isOpaque) {
+                        piece.mesh.material.opacity = 1.0;
+                    } else {
+                        piece.mesh.material.opacity = 0.95;
+                    }
                 }
             });
         }
@@ -716,10 +722,19 @@
             unhighlightPiece(piece.mesh);
             clearValidCellIndicators();
 
+            // Remember source location before moving
+            const currentLoc = gameState.getPieceLocation(piece);
+
             gameState.movePiece(piece, row, col);
 
             animatePieceToCell(piece, row, col, () => {
+                // Update visibility of target cell
                 updateStackVisibility(row, col);
+
+                // Update visibility of source cell if piece was moved from board
+                if (currentLoc) {
+                    updateStackVisibility(currentLoc.row, currentLoc.col);
+                }
 
                 if (gameState.checkWinner()) {
                     handleWin();
