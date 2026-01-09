@@ -381,7 +381,7 @@
             metalness: 0.8
         });
 
-        const cellSize = 2.5;
+        const cellSize = 3.5;
         const cellGap = 0.1;
         const cellMeshes = [];
 
@@ -446,8 +446,34 @@
 
         function createPieceMesh(piece) {
             const geometry = createGobletGeometry(piece.size);
-            const color = piece.player === PLAYER_ORANGE ? 0xff6b35 : 0x4ecdc4;
-            const material = createCrystalMaterial(color, color);
+
+            // Adjust color based on size - small is lighter, large is darker
+            let color, emissiveColor;
+            if (piece.player === PLAYER_ORANGE) {
+                if (piece.size === SIZE_SMALL) {
+                    color = 0xffad85; // lighter orange
+                    emissiveColor = 0xffad85;
+                } else if (piece.size === SIZE_MEDIUM) {
+                    color = 0xff6b35; // medium orange
+                    emissiveColor = 0xff6b35;
+                } else {
+                    color = 0xcc4520; // darker orange
+                    emissiveColor = 0xcc4520;
+                }
+            } else {
+                if (piece.size === SIZE_SMALL) {
+                    color = 0x8ffff5; // lighter blue
+                    emissiveColor = 0x8ffff5;
+                } else if (piece.size === SIZE_MEDIUM) {
+                    color = 0x4ecdc4; // medium blue
+                    emissiveColor = 0x4ecdc4;
+                } else {
+                    color = 0x2a9d96; // darker blue
+                    emissiveColor = 0x2a9d96;
+                }
+            }
+
+            const material = createCrystalMaterial(color, emissiveColor);
             const mesh = new THREE.Mesh(geometry, material);
 
             mesh.castShadow = true;
@@ -466,13 +492,15 @@
         let isAnimating = false;
         let isOpaque = false;
 
+        // Helper function to get piece height based on size
+        function getPieceHeight(size) {
+            return size === SIZE_SMALL ? 0.4 : (size === SIZE_MEDIUM ? 0.7 : 1.0);
+        }
+
         // Helper function to get height offset based on piece size
         function getHeightOffset(size) {
             // Height is centered, so position = height/2 to sit on ground
-            // Small: height 0.4, so position at 0.2
-            // Medium: height 0.7, so position at 0.35
-            // Large: height 1.0, so position at 0.5
-            return size === SIZE_SMALL ? 0.2 : (size === SIZE_MEDIUM ? 0.35 : 0.5);
+            return getPieceHeight(size) / 2;
         }
 
         // Create all pieces and position them in reserves
@@ -594,10 +622,26 @@
             const x = (targetCol - 1) * cellSize;
             const z = (targetRow - 1) * cellSize;
 
-            // Calculate stack height
-            const stackHeight = gameState.board[targetRow][targetCol].length;
-            const heightOffset = stackHeight * 0.15;
-            const y = heightOffset;
+            // Board surface is at Y = 0, pieces need to sit on top
+            const boardSurfaceY = 0;
+
+            // Calculate stack height using actual piece heights
+            const stack = gameState.board[targetRow][targetCol];
+            let totalHeight = 0;
+            for (let i = 0; i < stack.length; i++) {
+                const stackPiece = stack[i];
+                totalHeight += getPieceHeight(stackPiece.size);
+            }
+
+            // Position this piece on top of the stack
+            // Piece is centered on its height, so we add half the piece height
+            let y = boardSurfaceY + totalHeight + getPieceHeight(piece.size) / 2;
+
+            // Ensure piece never goes below board surface (collision detection)
+            const minY = getPieceHeight(piece.size) / 2;
+            if (y < minY) {
+                y = minY;
+            }
 
             const duration = 800;
             const startTime = Date.now();
