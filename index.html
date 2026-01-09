@@ -481,7 +481,11 @@
                 const col = index % 2;
 
                 // Position based on piece size to avoid clipping through board
-                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                // Height is centered, so we need position = height/2 to sit on ground
+                // Small: height 0.4, so position at 0.2
+                // Medium: height 0.7, so position at 0.35
+                // Large: height 1.0, so position at 0.5
+                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
                 mesh.position.set(-reserveOffsetX - col * spacing, heightOffset, -2 + row * spacing);
 
                 scene.add(mesh);
@@ -496,7 +500,8 @@
                 const col = index % 2;
 
                 // Position based on piece size to avoid clipping through board
-                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                // Height is centered, so we need position = height/2 to sit on ground
+                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
                 mesh.position.set(reserveOffsetX + col * spacing, heightOffset, -2 + row * spacing);
 
                 scene.add(mesh);
@@ -802,7 +807,8 @@
             gameState.reserves[PLAYER_ORANGE].forEach((piece, index) => {
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                // Height is centered, so position = height/2 to sit on ground
+                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
                 piece.mesh.position.set(-reserveOffsetX - col * spacing, heightOffset, -2 + row * spacing);
                 piece.mesh.visible = true;
                 piece.mesh.material.opacity = 0.95;
@@ -812,7 +818,8 @@
             gameState.reserves[PLAYER_BLUE].forEach((piece, index) => {
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                const heightOffset = piece.size === SIZE_SMALL ? 0.3 : (piece.size === SIZE_MEDIUM ? 0.45 : 0.6);
+                // Height is centered, so position = height/2 to sit on ground
+                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
                 piece.mesh.position.set(reserveOffsetX + col * spacing, heightOffset, -2 + row * spacing);
                 piece.mesh.visible = true;
                 piece.mesh.material.opacity = 0.95;
