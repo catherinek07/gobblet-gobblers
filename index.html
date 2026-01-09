@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif;
             background: linear-gradient(135deg, #1e1e2e 0%, #2d1b4e 100%);
             overflow: hidden;
             color: white;
@@ -79,6 +79,36 @@
             transform: translateX(-50%) scale(1.05);
         }
 
+        #toggleButtons {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: all;
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+
         .winner-announcement {
             animation: pulse 1.5s infinite;
         }
@@ -94,6 +124,9 @@
     <div id="ui">
         <div id="turnIndicator">Orange's Turn</div>
         <div id="statusMessage">Select a piece to place or move</div>
+        <div id="toggleButtons">
+            <button class="toggle-btn" id="opacityToggle">Toggle Opacity</button>
+        </div>
         <button id="resetButton">Reset Game</button>
     </div>
 
@@ -122,6 +155,7 @@
                 this.currentPlayer = PLAYER_ORANGE;
                 this.winner = null;
                 this.gameOver = false;
+                this.winningPieces = [];
                 this.board = Array(3).fill(null).map(() => Array(3).fill(null).map(() => []));
 
                 // Each player has 6 pieces: 2 small, 2 medium, 2 large
@@ -245,6 +279,7 @@
                 if (top1.player === top2.player && top2.player === top3.player) {
                     this.winner = top1.player;
                     this.gameOver = true;
+                    this.winningPieces = [top1, top2, top3];
                     return true;
                 }
 
@@ -259,6 +294,7 @@
                 this.currentPlayer = PLAYER_ORANGE;
                 this.winner = null;
                 this.gameOver = false;
+                this.winningPieces = [];
                 this.board = Array(3).fill(null).map(() => Array(3).fill(null).map(() => []));
                 this.selectedPiece = null;
                 this.selectedCell = null;
@@ -388,9 +424,6 @@
             });
         }
 
-        const orangeMaterial = createCrystalMaterial(0xff6b35, 0xff6b35);
-        const blueMaterial = createCrystalMaterial(0x4ecdc4, 0x4ecdc4);
-
         function createGobletGeometry(size) {
             const params = {
                 [SIZE_SMALL]: { radiusTop: 0.3, radiusBottom: 0.4, height: 0.5 },
@@ -410,7 +443,8 @@
 
         function createPieceMesh(piece) {
             const geometry = createGobletGeometry(piece.size);
-            const material = piece.player === PLAYER_ORANGE ? orangeMaterial : blueMaterial;
+            const color = piece.player === PLAYER_ORANGE ? 0xff6b35 : 0x4ecdc4;
+            const material = createCrystalMaterial(color, color);
             const mesh = new THREE.Mesh(geometry, material);
 
             mesh.castShadow = true;
@@ -427,6 +461,7 @@
         let hoveredObject = null;
         const validCellIndicators = [];
         let isAnimating = false;
+        let isOpaque = false;
 
         // Create all pieces and position them in reserves
         function initializePieces() {
@@ -592,8 +627,21 @@
         function handlePieceClick(piece) {
             if (isAnimating || gameState.gameOver) return;
 
+            // If a piece is already selected and user clicks an opponent's piece on the board, treat it as clicking that cell
+            if (gameState.selectedPiece && !piece.inReserve && piece.player !== gameState.currentPlayer) {
+                const location = gameState.getPieceLocation(piece);
+                if (location) {
+                    handleCellClick(location.row, location.col);
+                    return;
+                }
+            }
+
             if (!gameState.canMovePiece(piece)) {
-                updateStatus("Not your piece or piece is covered!");
+                if (piece.player !== gameState.currentPlayer) {
+                    updateStatus("That's not your piece!");
+                } else {
+                    updateStatus("That piece is covered!");
+                }
                 return;
             }
 
@@ -626,15 +674,23 @@
 
             const piece = gameState.selectedPiece;
 
-            if (!gameState.isValidMove(piece, row, col)) {
-                updateStatus("Invalid move!");
-                return;
-            }
-
             // Check if trying to move to same location
             const currentLoc = gameState.getPieceLocation(piece);
             if (currentLoc && currentLoc.row === row && currentLoc.col === col) {
                 updateStatus("Cannot stay in the same place!");
+                return;
+            }
+
+            if (!gameState.isValidMove(piece, row, col)) {
+                const targetCell = gameState.board[row][col];
+                if (targetCell.length > 0) {
+                    const topPiece = targetCell[targetCell.length - 1];
+                    if (piece.size <= topPiece.size) {
+                        updateStatus("You must cover this piece with a bigger piece!");
+                        return;
+                    }
+                }
+                updateStatus("Invalid move!");
                 return;
             }
 
@@ -657,6 +713,8 @@
             });
         }
 
+        const winningPiecesAnimations = new Set();
+
         function handleWin() {
             const winnerName = gameState.winner === PLAYER_ORANGE ? "Orange" : "Blue";
             updateStatus(`${winnerName} Wins!`, true);
@@ -664,36 +722,33 @@
             const turnIndicator = document.getElementById('turnIndicator');
             turnIndicator.classList.add('winner-announcement');
 
-            // Animate winning pieces
-            for (let row = 0; row < 3; row++) {
-                for (let col = 0; col < 3; col++) {
-                    const stack = gameState.board[row][col];
-                    if (stack.length > 0) {
-                        const topPiece = stack[stack.length - 1];
-                        if (topPiece.player === gameState.winner) {
-                            animateWinningPiece(topPiece.mesh);
-                        }
-                    }
-                }
+            winningPiecesAnimations.clear();
+
+            // Animate only the winning pieces (the 3 in a row)
+            if (gameState.winningPieces && gameState.winningPieces.length === 3) {
+                gameState.winningPieces.forEach(piece => {
+                    winningPiecesAnimations.add(piece.mesh);
+                    animateWinningPiece(piece.mesh);
+                });
             }
         }
 
         function animateWinningPiece(mesh) {
             const startIntensity = 0.3;
             const maxIntensity = 1.2;
-            let increasing = true;
+            const animState = { increasing: true };
 
             function pulse() {
-                if (!gameState.gameOver) return;
+                if (!gameState.gameOver || !winningPiecesAnimations.has(mesh)) return;
 
                 const current = mesh.material.emissiveIntensity;
 
-                if (increasing) {
+                if (animState.increasing) {
                     mesh.material.emissiveIntensity = Math.min(current + 0.02, maxIntensity);
-                    if (mesh.material.emissiveIntensity >= maxIntensity) increasing = false;
+                    if (mesh.material.emissiveIntensity >= maxIntensity) animState.increasing = false;
                 } else {
                     mesh.material.emissiveIntensity = Math.max(current - 0.02, startIntensity);
-                    if (mesh.material.emissiveIntensity <= startIntensity) increasing = true;
+                    if (mesh.material.emissiveIntensity <= startIntensity) animState.increasing = true;
                 }
 
                 requestAnimationFrame(pulse);
@@ -808,6 +863,25 @@
         });
 
         document.getElementById('resetButton').addEventListener('click', resetGame);
+
+        document.getElementById('opacityToggle').addEventListener('click', () => {
+            isOpaque = !isOpaque;
+
+            for (let player in gameState.reserves) {
+                gameState.reserves[player].forEach(piece => {
+                    if (isOpaque) {
+                        piece.mesh.material.transmission = 0;
+                        piece.mesh.material.opacity = 1.0;
+                        piece.mesh.material.transparent = false;
+                    } else {
+                        piece.mesh.material.transmission = 0.9;
+                        piece.mesh.material.opacity = 0.95;
+                        piece.mesh.material.transparent = true;
+                    }
+                    piece.mesh.material.needsUpdate = true;
+                });
+            }
+        });
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
