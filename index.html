@@ -466,6 +466,15 @@
         let isAnimating = false;
         let isOpaque = false;
 
+        // Helper function to get height offset based on piece size
+        function getHeightOffset(size) {
+            // Height is centered, so position = height/2 to sit on ground
+            // Small: height 0.4, so position at 0.2
+            // Medium: height 0.7, so position at 0.35
+            // Large: height 1.0, so position at 0.5
+            return size === SIZE_SMALL ? 0.2 : (size === SIZE_MEDIUM ? 0.35 : 0.5);
+        }
+
         // Create all pieces and position them in reserves
         function initializePieces() {
             const reserveOffsetX = 8;
@@ -479,13 +488,7 @@
 
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-
-                // Position based on piece size to avoid clipping through board
-                // Height is centered, so we need position = height/2 to sit on ground
-                // Small: height 0.4, so position at 0.2
-                // Medium: height 0.7, so position at 0.35
-                // Large: height 1.0, so position at 0.5
-                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
+                const heightOffset = getHeightOffset(piece.size);
                 mesh.position.set(-reserveOffsetX - col * spacing, heightOffset, -2 + row * spacing);
 
                 scene.add(mesh);
@@ -498,10 +501,7 @@
 
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-
-                // Position based on piece size to avoid clipping through board
-                // Height is centered, so we need position = height/2 to sit on ground
-                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
+                const heightOffset = getHeightOffset(piece.size);
                 mesh.position.set(reserveOffsetX + col * spacing, heightOffset, -2 + row * spacing);
 
                 scene.add(mesh);
@@ -826,8 +826,7 @@
             gameState.reserves[PLAYER_ORANGE].forEach((piece, index) => {
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                // Height is centered, so position = height/2 to sit on ground
-                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
+                const heightOffset = getHeightOffset(piece.size);
                 piece.mesh.position.set(-reserveOffsetX - col * spacing, heightOffset, -2 + row * spacing);
                 piece.mesh.visible = true;
                 piece.mesh.material.opacity = 0.95;
@@ -837,8 +836,7 @@
             gameState.reserves[PLAYER_BLUE].forEach((piece, index) => {
                 const row = Math.floor(index / 2);
                 const col = index % 2;
-                // Height is centered, so position = height/2 to sit on ground
-                const heightOffset = piece.size === SIZE_SMALL ? 0.2 : (piece.size === SIZE_MEDIUM ? 0.35 : 0.5);
+                const heightOffset = getHeightOffset(piece.size);
                 piece.mesh.position.set(reserveOffsetX + col * spacing, heightOffset, -2 + row * spacing);
                 piece.mesh.visible = true;
                 piece.mesh.material.opacity = 0.95;
