@@ -152,10 +152,19 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/three@0.152.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.152.0/examples/js/controls/OrbitControls.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.152.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.152.0/examples/jsm/"
+        }
+    }
+    </script>
 
-    <script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
         // ============================================
         // PHASE 1: CORE GAME STATE
         // ============================================
@@ -366,7 +375,7 @@
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
             // Controls
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.minDistance = 5;
