@@ -551,7 +551,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * 6 + pieceIndex * 2.5,  // Space pieces horizontally (increased to 2.5 to prevent large piece overlap)
+                    side * (6 + pieceIndex * 2.5),  // Space pieces away from board (multiply by side to go correct direction)
                     config.height / 2,
                     -2 + sizeIndex * 2
                 );
@@ -917,7 +917,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * 6 + pieceIndex * 2.5,  // Space pieces horizontally (increased to 2.5 to prevent large piece overlap)
+                    side * (6 + pieceIndex * 2.5),  // Space pieces away from board (multiply by side to go correct direction)
                     sizeConfigs[piece.size].height / 2,
                     -2 + sizeIndex * 2
                 );
