@@ -480,23 +480,25 @@
                 boardGroup.add(line);
             }
 
-            // Cell markers (invisible for clicking)
+            // Cell markers (invisible for clicking, but glow when valid target)
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
                     const cellGeometry = new THREE.PlaneGeometry(1.8, 1.8);
                     const cellMaterial = new THREE.MeshBasicMaterial({
                         transparent: true,
                         opacity: 0,
-                        side: THREE.DoubleSide
+                        side: THREE.DoubleSide,
+                        depthWrite: false  // Don't occlude grid lines
                     });
                     const cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
                     cellMesh.rotation.x = -Math.PI / 2;
                     cellMesh.position.set(
                         -2 + col * 2,
-                        0.01,
+                        0.02,  // Slightly above grid lines (0.01)
                         -2 + row * 2
                     );
                     cellMesh.userData = { type: 'cell', row, col };
+                    cellMesh.renderOrder = 1;  // Render after grid lines
                     boardGroup.add(cellMesh);
                     cellMeshes[`${row}-${col}`] = cellMesh;
                 }
@@ -553,7 +555,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * (6 + pieceIndex * 1.8),  // Space pieces away from board (1.8 units apart)
+                    side * (5 + pieceIndex * 1.2),  // Space pieces away from board (1.2 units apart, closer to board)
                     config.height / 2,
                     -2 + sizeIndex * 2
                 );
@@ -926,7 +928,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * (6 + pieceIndex * 1.8),  // Space pieces away from board (1.8 units apart)
+                    side * (5 + pieceIndex * 1.2),  // Space pieces away from board (1.2 units apart, closer to board)
                     sizeConfigs[piece.size].height / 2,
                     -2 + sizeIndex * 2
                 );
@@ -940,13 +942,33 @@
         function toggleOpacity() {
             isOpaque = !isOpaque;
             Object.values(pieceMeshes).forEach(mesh => {
+                const piece = game.getPiece(mesh.userData.pieceId);
+
                 if (isOpaque) {
-                    // Opaque mode - solid pieces, reveal all inner pieces
+                    // Opaque mode - solid pieces, show all pieces including inner ones
                     mesh.material.transmission = 0;
-                    mesh.material.transparent = false;
+                    mesh.material.transparent = true;  // Keep transparent for proper alpha
                     mesh.material.depthWrite = true;
-                    mesh.material.opacity = 1.0;
-                    mesh.material.emissiveIntensity = 0.3;
+
+                    // Check if piece is hidden in a stack
+                    if (piece && piece.location === 'board') {
+                        const [row, col] = piece.boardPosition;
+                        const stack = game.board[row][col];
+                        const index = stack.findIndex(p => p.id === piece.id);
+
+                        if (index < stack.length - 1) {
+                            // Hidden piece - show with slight transparency so you can see it
+                            mesh.material.opacity = 0.7;
+                            mesh.material.emissiveIntensity = 0.5;
+                        } else {
+                            // Top piece - full opacity
+                            mesh.material.opacity = 1.0;
+                            mesh.material.emissiveIntensity = 0.3;
+                        }
+                    } else {
+                        mesh.material.opacity = 1.0;
+                        mesh.material.emissiveIntensity = 0.3;
+                    }
                 } else {
                     // Transparent mode - restore crystal appearance
                     mesh.material.transmission = 0.9;
@@ -954,7 +976,6 @@
                     mesh.material.depthWrite = false;
 
                     // Check if piece is hidden in a stack
-                    const piece = game.getPiece(mesh.userData.pieceId);
                     if (piece && piece.location === 'board') {
                         const [row, col] = piece.boardPosition;
                         const stack = game.board[row][col];
