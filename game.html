@@ -534,7 +534,9 @@
                     clearcoat: 1.0,
                     clearcoatRoughness: 0.1,
                     ior: 1.5,
-                    transparent: true
+                    transparent: true,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
                 });
 
                 const mesh = new THREE.Mesh(geometry, material);
@@ -895,11 +897,18 @@
             // Clear winner announcement
             document.getElementById('winner-announcement').classList.remove('show');
 
+            // Reset opacity toggle state
+            isOpaque = false;
+
             // Reset all piece positions and materials
             game.pieces.forEach((piece, index) => {
                 const mesh = pieceMeshes[piece.id];
                 mesh.material.emissiveIntensity = 0.3;
                 mesh.material.opacity = 1.0;
+                mesh.material.transmission = 0.9;
+                mesh.material.transparent = true;
+                mesh.material.depthWrite = false;
+                mesh.material.needsUpdate = true;
                 mesh.visible = true;
 
                 // Position pieces in reserves
@@ -932,13 +941,17 @@
             isOpaque = !isOpaque;
             Object.values(pieceMeshes).forEach(mesh => {
                 if (isOpaque) {
-                    // Opaque mode - also reveal inner pieces
+                    // Opaque mode - solid pieces, reveal all inner pieces
                     mesh.material.transmission = 0;
+                    mesh.material.transparent = false;
+                    mesh.material.depthWrite = true;
                     mesh.material.opacity = 1.0;
                     mesh.material.emissiveIntensity = 0.3;
                 } else {
-                    // Transparent mode - restore original visibility settings
+                    // Transparent mode - restore crystal appearance
                     mesh.material.transmission = 0.9;
+                    mesh.material.transparent = true;
+                    mesh.material.depthWrite = false;
 
                     // Check if piece is hidden in a stack
                     const piece = game.getPiece(mesh.userData.pieceId);
@@ -962,6 +975,7 @@
                         mesh.material.emissiveIntensity = 0.3;
                     }
                 }
+                mesh.material.needsUpdate = true;
             });
         }
 
