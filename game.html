@@ -351,6 +351,7 @@
         let isDragging = false;
         let isOpaque = false;
         let isLightMode = false;
+        let isAnimating = false;  // Prevent clicks during animation
 
         function initScene() {
             // Scene
@@ -483,7 +484,7 @@
             // Cell markers (invisible for clicking, but glow when valid target)
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
-                    const cellGeometry = new THREE.PlaneGeometry(1.8, 1.8);
+                    const cellGeometry = new THREE.PlaneGeometry(2.0, 2.0);  // Full cell coverage
                     const cellMaterial = new THREE.MeshBasicMaterial({
                         transparent: true,
                         opacity: 0,
@@ -546,7 +547,7 @@
                 mesh.receiveShadow = true;
                 mesh.userData = { type: 'piece', pieceId: piece.id };
 
-                // Position pieces in reserves
+                // Position pieces in reserves - 2 columns (by piece index) x 3 rows (by size)
                 const side = piece.player === PLAYERS.ORANGE ? -1 : 1;
                 const sizeIndex = [PIECE_SIZES.SMALL, PIECE_SIZES.MEDIUM, PIECE_SIZES.LARGE]
                     .indexOf(piece.size);
@@ -555,9 +556,9 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * (5 + pieceIndex * 1.2),  // Space pieces away from board (1.2 units apart, closer to board)
+                    side * (5 + pieceIndex * 1.8),  // 1.8 units between same-size pieces
                     config.height / 2,
-                    -2 + sizeIndex * 2
+                    -1.5 + sizeIndex * 1.5  // 1.5 units between different sizes (was 2)
                 );
 
                 scene.add(mesh);
@@ -611,7 +612,7 @@
         }
 
         function onClick(event) {
-            if (game.winner) return;
+            if (game.winner || isAnimating) return;  // Block clicks during animation
 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -693,6 +694,7 @@
         // ============================================
 
         function movePieceAnimated(piece, targetRow, targetCol) {
+            isAnimating = true;  // Block further clicks
             const mesh = pieceMeshes[piece.id];
             const targetX = -2 + targetCol * 2;
             const targetZ = -2 + targetRow * 2;
@@ -756,6 +758,7 @@
                         updateStatusMessage("Select a piece to place or move");
                     }
 
+                    isAnimating = false;  // Allow clicks again
                     return;
                 }
 
@@ -928,9 +931,9 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * (5 + pieceIndex * 1.2),  // Space pieces away from board (1.2 units apart, closer to board)
+                    side * (5 + pieceIndex * 1.8),  // 1.8 units between same-size pieces
                     sizeConfigs[piece.size].height / 2,
-                    -2 + sizeIndex * 2
+                    -1.5 + sizeIndex * 1.5  // 1.5 units between different sizes
                 );
             });
 
@@ -1015,6 +1018,14 @@
                 if (boardMesh) {
                     boardMesh.material.color.setHex(0xE5E1D5); // Inverted from 0x1a1a2e
                 }
+
+                // Update grid lines to dark color for light mode
+                boardGroup.children.forEach(child => {
+                    if (child instanceof THREE.Line) {
+                        child.material.color.setHex(0x333333);  // Dark lines on light board
+                        child.material.opacity = 0.8;
+                    }
+                });
             } else {
                 body.classList.remove('light-mode');
                 scene.background = new THREE.Color(0x000000);
@@ -1026,6 +1037,14 @@
                 if (boardMesh) {
                     boardMesh.material.color.setHex(0x1a1a2e);
                 }
+
+                // Restore grid lines to white for dark mode
+                boardGroup.children.forEach(child => {
+                    if (child instanceof THREE.Line) {
+                        child.material.color.setHex(0xffffff);  // White lines on dark board
+                        child.material.opacity = 0.5;
+                    }
+                });
             }
         }
 
