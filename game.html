@@ -551,7 +551,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * (6 + pieceIndex * 2.5),  // Space pieces away from board (multiply by side to go correct direction)
+                    side * (6 + pieceIndex * 1.8),  // Space pieces away from board (1.8 units apart)
                     config.height / 2,
                     -2 + sizeIndex * 2
                 );
@@ -917,7 +917,7 @@
                     .indexOf(piece);
 
                 mesh.position.set(
-                    side * (6 + pieceIndex * 2.5),  // Space pieces away from board (multiply by side to go correct direction)
+                    side * (6 + pieceIndex * 1.8),  // Space pieces away from board (1.8 units apart)
                     sizeConfigs[piece.size].height / 2,
                     -2 + sizeIndex * 2
                 );
