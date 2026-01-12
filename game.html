@@ -435,18 +435,20 @@
         function createBoard() {
             boardGroup = new THREE.Group();
 
-            // Board base
+            // Board base - use a unique name to identify it
             const boardGeometry = new THREE.BoxGeometry(7, 0.3, 7);
             const boardMaterial = new THREE.MeshPhysicalMaterial({
                 color: 0x1a1a2e,
                 roughness: 0.3,
                 metalness: 0.2,
                 clearcoat: 0.5,
-                clearcoatRoughness: 0.3
+                clearcoatRoughness: 0.3,
+                depthWrite: true
             });
             const boardMesh = new THREE.Mesh(boardGeometry, boardMaterial);
             boardMesh.receiveShadow = true;
             boardMesh.position.y = -0.15;
+            boardMesh.name = 'boardBase';  // Tag it for identification
             boardGroup.add(boardMesh);
 
             // Grid lines
@@ -484,21 +486,22 @@
             // Cell markers (invisible for clicking, but glow when valid target)
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
-                    const cellGeometry = new THREE.BoxGeometry(2.0, 0.1, 2.0);  // Thin box for better click detection
+                    const cellGeometry = new THREE.BoxGeometry(2.0, 0.02, 2.0);  // Very thin box
                     const cellMaterial = new THREE.MeshBasicMaterial({
                         transparent: true,
                         opacity: 0,
                         side: THREE.DoubleSide,
-                        depthWrite: false  // Don't occlude grid lines
+                        depthTest: false,  // Don't test depth - always clickable
+                        depthWrite: false  // Don't write to depth buffer
                     });
                     const cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
                     cellMesh.position.set(
                         -2 + col * 2,
-                        0.05,  // Slightly above board surface
+                        0.16,  // Above board surface (board top is at 0.15)
                         -2 + row * 2
                     );
                     cellMesh.userData = { type: 'cell', row, col };
-                    cellMesh.renderOrder = 1;  // Render after grid lines
+                    cellMesh.renderOrder = 999;  // Render last
                     boardGroup.add(cellMesh);
                     cellMeshes[`${row}-${col}`] = cellMesh;
                 }
@@ -804,27 +807,43 @@
             const stack = game.board[row][col];
             stack.forEach((piece, index) => {
                 const mesh = pieceMeshes[piece.id];
-                if (index < stack.length - 1) {
-                    // Hidden/inner pieces - only visible in see-through mode
-                    if (isOpaque) {
-                        mesh.visible = false;  // Hidden in opaque mode
-                    } else {
-                        // All inner pieces visible with varying brightness based on depth
+                const isTopPiece = (index === stack.length - 1);
+                const stackDepth = stack.length;
+
+                if (isOpaque) {
+                    // Opaque mode - only top piece visible
+                    if (isTopPiece) {
                         mesh.visible = true;
-                        mesh.material.opacity = 1.0;  // Full opacity so they're clearly visible
-                        mesh.material.emissiveIntensity = 0.7;  // Brighter glow for inner pieces
-                    }
-                } else {
-                    // Top piece - always visible
-                    mesh.visible = true;
-                    if (isOpaque) {
                         mesh.material.opacity = 1.0;
                         mesh.material.emissiveIntensity = 0.3;
+                        mesh.material.depthWrite = true;
+                        mesh.renderOrder = 0;
                     } else {
-                        mesh.material.opacity = 0.4;  // More transparent to see inner pieces
-                        mesh.material.emissiveIntensity = 0.2;
+                        mesh.visible = false;
+                        mesh.renderOrder = 0;
+                    }
+                } else {
+                    // See-through mode - all pieces visible
+                    // Inner pieces render AFTER outer pieces (higher renderOrder)
+                    // This makes inner pieces always visible on top
+                    mesh.visible = true;
+                    mesh.material.depthWrite = false;  // Disable depth write for transparency
+
+                    // Innermost piece (index 0) gets highest render order
+                    // This way small (inner) renders last, on top of medium and large
+                    mesh.renderOrder = (stackDepth - index) * 10;
+
+                    if (isTopPiece) {
+                        // Top/outermost piece - very transparent to see through
+                        mesh.material.opacity = 0.25;
+                        mesh.material.emissiveIntensity = 0.15;
+                    } else {
+                        // Inner pieces - more opaque and bright to be visible
+                        mesh.material.opacity = 0.9;
+                        mesh.material.emissiveIntensity = 0.7;
                     }
                 }
+                mesh.material.needsUpdate = true;
             });
         }
 
@@ -971,14 +990,14 @@
             isLightMode = !isLightMode;
             const body = document.body;
 
+            // Find board base by name (not by geometry type to avoid hitting cell markers)
+            const boardMesh = boardGroup.getObjectByName('boardBase');
+
             if (isLightMode) {
                 body.classList.add('light-mode');
                 scene.background = new THREE.Color(0xFFC2E0);
 
                 // Update board color (invert)
-                const boardMesh = boardGroup.children.find(child =>
-                    child instanceof THREE.Mesh && child.geometry instanceof THREE.BoxGeometry
-                );
                 if (boardMesh) {
                     boardMesh.material.color.setHex(0xE5E1D5); // Inverted from 0x1a1a2e
                 }
@@ -995,9 +1014,6 @@
                 scene.background = new THREE.Color(0x000000);
 
                 // Restore board color
-                const boardMesh = boardGroup.children.find(child =>
-                    child instanceof THREE.Mesh && child.geometry instanceof THREE.BoxGeometry
-                );
                 if (boardMesh) {
                     boardMesh.material.color.setHex(0x1a1a2e);
                 }
