@@ -457,18 +457,21 @@
                 color: 0xffffff,
                 linewidth: 2,
                 opacity: 0.5,
-                transparent: true
+                transparent: true,
+                depthTest: true,
+                depthWrite: false
             });
 
             // Vertical lines
             for (let i = 0; i <= 3; i++) {
                 const x = -3 + i * 2;
                 const points = [
-                    new THREE.Vector3(x, 0.01, -3),
-                    new THREE.Vector3(x, 0.01, 3)
+                    new THREE.Vector3(x, 0.16, -3),
+                    new THREE.Vector3(x, 0.16, 3)
                 ];
                 const geometry = new THREE.BufferGeometry().setFromPoints(points);
                 const line = new THREE.Line(geometry, lineMaterial);
+                line.renderOrder = 1;  // Render after board base
                 boardGroup.add(line);
             }
 
@@ -476,11 +479,12 @@
             for (let i = 0; i <= 3; i++) {
                 const z = -3 + i * 2;
                 const points = [
-                    new THREE.Vector3(-3, 0.01, z),
-                    new THREE.Vector3(3, 0.01, z)
+                    new THREE.Vector3(-3, 0.16, z),
+                    new THREE.Vector3(3, 0.16, z)
                 ];
                 const geometry = new THREE.BufferGeometry().setFromPoints(points);
                 const line = new THREE.Line(geometry, lineMaterial);
+                line.renderOrder = 1;  // Render after board base
                 boardGroup.add(line);
             }
 
@@ -987,7 +991,17 @@
                 }
             }
 
-            // Reserve pieces don't need updating - they're always fully visible
+            // Reserve pieces - ensure they maintain proper rendering
+            game.pieces.forEach(piece => {
+                if (piece.location === 'reserve') {
+                    const mesh = pieceMeshes[piece.id];
+                    mesh.material.depthWrite = true;  // Reserve pieces always write depth
+                    mesh.material.opacity = 1.0;
+                    mesh.material.emissiveIntensity = 0.3;
+                    mesh.renderOrder = 0;
+                    mesh.material.needsUpdate = true;
+                }
+            });
         }
 
         function toggleLightMode() {
