@@ -484,7 +484,7 @@
             // Cell markers (invisible for clicking, but glow when valid target)
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
-                    const cellGeometry = new THREE.PlaneGeometry(2.0, 2.0);  // Full cell coverage
+                    const cellGeometry = new THREE.BoxGeometry(2.0, 0.1, 2.0);  // Thin box for better click detection
                     const cellMaterial = new THREE.MeshBasicMaterial({
                         transparent: true,
                         opacity: 0,
@@ -492,10 +492,9 @@
                         depthWrite: false  // Don't occlude grid lines
                     });
                     const cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
-                    cellMesh.rotation.x = -Math.PI / 2;
                     cellMesh.position.set(
                         -2 + col * 2,
-                        0.02,  // Slightly above grid lines (0.01)
+                        0.05,  // Slightly above board surface
                         -2 + row * 2
                     );
                     cellMesh.userData = { type: 'cell', row, col };
