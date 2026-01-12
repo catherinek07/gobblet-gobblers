@@ -840,16 +840,16 @@
                     mesh.renderOrder = (stackDepth - index) * 10 + 100;  // Add 100 to render after board
 
                     if (isTopPiece) {
-                        // Top/outermost piece - very transparent to see through
-                        mesh.material.opacity = 0.25;
-                        mesh.material.emissiveIntensity = 0.15;
+                        // Top/outermost piece (largest) - brightest and most opaque
+                        mesh.material.opacity = 0.95;
+                        mesh.material.emissiveIntensity = 0.9;
                     } else {
-                        // Inner pieces - progressively brighter as they're deeper
-                        // index 0 (innermost/smallest) is brightest
-                        // Higher indices (closer to surface) are less bright
-                        const depthRatio = (stackDepth - index - 1) / (stackDepth - 1);  // 1.0 for innermost, 0.0 for second-to-top
-                        mesh.material.opacity = 0.7 + depthRatio * 0.25;  // 0.7 to 0.95
-                        mesh.material.emissiveIntensity = 0.5 + depthRatio * 0.4;  // 0.5 to 0.9
+                        // Inner pieces - progressively dimmer as they get smaller
+                        // index 0 (innermost/smallest) is dimmest
+                        // Higher indices (closer to surface/larger) are brighter
+                        const depthRatio = index / (stackDepth - 1);  // 0.0 for innermost, 1.0 for second-to-top
+                        mesh.material.opacity = 0.5 + depthRatio * 0.25;  // 0.5 to 0.75
+                        mesh.material.emissiveIntensity = 0.3 + depthRatio * 0.3;  // 0.3 to 0.6
                     }
                 }
                 mesh.material.needsUpdate = true;
@@ -1063,6 +1063,7 @@
         window.addEventListener('load', function() {
             initScene();
             animate();
+            updateTurnIndicator();  // Set initial turn indicator color
         });
     </script>
 </body>
