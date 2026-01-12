@@ -805,13 +805,14 @@
             stack.forEach((piece, index) => {
                 const mesh = pieceMeshes[piece.id];
                 if (index < stack.length - 1) {
-                    // Hidden pieces - only visible in see-through mode
+                    // Hidden/inner pieces - only visible in see-through mode
                     if (isOpaque) {
                         mesh.visible = false;  // Hidden in opaque mode
                     } else {
+                        // All inner pieces visible with varying brightness based on depth
                         mesh.visible = true;
-                        mesh.material.opacity = 0.9;
-                        mesh.material.emissiveIntensity = 0.6;
+                        mesh.material.opacity = 1.0;  // Full opacity so they're clearly visible
+                        mesh.material.emissiveIntensity = 0.7;  // Brighter glow for inner pieces
                     }
                 } else {
                     // Top piece - always visible
@@ -820,8 +821,8 @@
                         mesh.material.opacity = 1.0;
                         mesh.material.emissiveIntensity = 0.3;
                     } else {
-                        mesh.material.opacity = 0.5;
-                        mesh.material.emissiveIntensity = 0.3;
+                        mesh.material.opacity = 0.4;  // More transparent to see inner pieces
+                        mesh.material.emissiveIntensity = 0.2;
                     }
                 }
             });
@@ -954,26 +955,7 @@
         function toggleOpacity() {
             isOpaque = !isOpaque;
 
-            // Update all pieces based on new mode
-            Object.values(pieceMeshes).forEach(mesh => {
-                const piece = game.getPiece(mesh.userData.pieceId);
-
-                if (piece && piece.location === 'board') {
-                    // Let updateStackVisibility handle board pieces
-                    return;
-                }
-
-                // Reserve pieces - always full opacity
-                mesh.material.transmission = 0;
-                mesh.material.transparent = true;
-                mesh.material.depthWrite = true;
-                mesh.material.opacity = 1.0;
-                mesh.material.emissiveIntensity = 0.3;
-                mesh.visible = true;
-                mesh.material.needsUpdate = true;
-            });
-
-            // Update all stacks on the board
+            // Update all stacks on the board (this handles visibility correctly)
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
                     if (game.board[row][col].length > 0) {
@@ -981,6 +963,8 @@
                     }
                 }
             }
+
+            // Reserve pieces don't need updating - they're always fully visible
         }
 
         function toggleLightMode() {
