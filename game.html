@@ -349,7 +349,7 @@
         let raycaster, mouse;
         let hoveredObject = null;
         let isDragging = false;
-        let isOpaque = false;
+        let isOpaque = true;  // Default to opaque mode
         let isLightMode = false;
         let isAnimating = false;  // Prevent clicks during animation
 
@@ -524,12 +524,12 @@
                 );
 
                 const color = piece.player === PLAYERS.ORANGE ? 0xff6b35 : 0x4ecdc4;
-                // Create unique material for each piece to prevent shared glow
+                // Create unique material for each piece - default to opaque
                 const material = new THREE.MeshPhysicalMaterial({
                     color: color,
                     emissive: color,
                     emissiveIntensity: 0.3,
-                    transmission: 0.9,
+                    transmission: 0,  // Default opaque
                     roughness: 0.1,
                     metalness: 0.1,
                     thickness: 0.5,
@@ -537,7 +537,8 @@
                     clearcoatRoughness: 0.1,
                     ior: 1.5,
                     transparent: true,
-                    depthWrite: false,
+                    opacity: 1.0,
+                    depthWrite: true,  // Opaque needs depth write
                     side: THREE.DoubleSide
                 });
 
@@ -804,15 +805,24 @@
             stack.forEach((piece, index) => {
                 const mesh = pieceMeshes[piece.id];
                 if (index < stack.length - 1) {
-                    // Hidden pieces - dimmed
-                    mesh.material.opacity = 0.3;
-                    mesh.material.emissiveIntensity = 0.1;
-                    mesh.visible = true;
+                    // Hidden pieces - only visible in see-through mode
+                    if (isOpaque) {
+                        mesh.visible = false;  // Hidden in opaque mode
+                    } else {
+                        mesh.visible = true;
+                        mesh.material.opacity = 0.9;
+                        mesh.material.emissiveIntensity = 0.6;
+                    }
                 } else {
-                    // Top piece - full brightness
-                    mesh.material.opacity = 1.0;
-                    mesh.material.emissiveIntensity = 0.3;
+                    // Top piece - always visible
                     mesh.visible = true;
+                    if (isOpaque) {
+                        mesh.material.opacity = 1.0;
+                        mesh.material.emissiveIntensity = 0.3;
+                    } else {
+                        mesh.material.opacity = 0.5;
+                        mesh.material.emissiveIntensity = 0.3;
+                    }
                 }
             });
         }
@@ -901,17 +911,17 @@
             // Clear winner announcement
             document.getElementById('winner-announcement').classList.remove('show');
 
-            // Reset opacity toggle state
-            isOpaque = false;
+            // Reset opacity toggle state to default (opaque)
+            isOpaque = true;
 
             // Reset all piece positions and materials
             game.pieces.forEach((piece, index) => {
                 const mesh = pieceMeshes[piece.id];
                 mesh.material.emissiveIntensity = 0.3;
                 mesh.material.opacity = 1.0;
-                mesh.material.transmission = 0.9;
+                mesh.material.transmission = 0;  // Opaque by default
                 mesh.material.transparent = true;
-                mesh.material.depthWrite = false;
+                mesh.material.depthWrite = true;  // Opaque needs depth write
                 mesh.material.needsUpdate = true;
                 mesh.visible = true;
 
@@ -943,63 +953,34 @@
 
         function toggleOpacity() {
             isOpaque = !isOpaque;
+
+            // Update all pieces based on new mode
             Object.values(pieceMeshes).forEach(mesh => {
                 const piece = game.getPiece(mesh.userData.pieceId);
 
-                if (isOpaque) {
-                    // Opaque mode - solid pieces, show all pieces including inner ones
-                    mesh.material.transmission = 0;
-                    mesh.material.transparent = true;  // Keep transparent for proper alpha
-                    mesh.material.depthWrite = true;
-
-                    // Check if piece is hidden in a stack
-                    if (piece && piece.location === 'board') {
-                        const [row, col] = piece.boardPosition;
-                        const stack = game.board[row][col];
-                        const index = stack.findIndex(p => p.id === piece.id);
-
-                        if (index < stack.length - 1) {
-                            // Hidden piece - show with slight transparency so you can see it
-                            mesh.material.opacity = 0.7;
-                            mesh.material.emissiveIntensity = 0.5;
-                        } else {
-                            // Top piece - full opacity
-                            mesh.material.opacity = 1.0;
-                            mesh.material.emissiveIntensity = 0.3;
-                        }
-                    } else {
-                        mesh.material.opacity = 1.0;
-                        mesh.material.emissiveIntensity = 0.3;
-                    }
-                } else {
-                    // Transparent mode - restore crystal appearance
-                    mesh.material.transmission = 0.9;
-                    mesh.material.transparent = true;
-                    mesh.material.depthWrite = false;
-
-                    // Check if piece is hidden in a stack
-                    if (piece && piece.location === 'board') {
-                        const [row, col] = piece.boardPosition;
-                        const stack = game.board[row][col];
-                        const index = stack.findIndex(p => p.id === piece.id);
-
-                        if (index < stack.length - 1) {
-                            // Hidden piece - keep dimmed
-                            mesh.material.opacity = 0.3;
-                            mesh.material.emissiveIntensity = 0.1;
-                        } else {
-                            // Top piece - full brightness
-                            mesh.material.opacity = 1.0;
-                            mesh.material.emissiveIntensity = 0.3;
-                        }
-                    } else {
-                        // Not on board (in reserve) - full brightness
-                        mesh.material.opacity = 1.0;
-                        mesh.material.emissiveIntensity = 0.3;
-                    }
+                if (piece && piece.location === 'board') {
+                    // Let updateStackVisibility handle board pieces
+                    return;
                 }
+
+                // Reserve pieces - always full opacity
+                mesh.material.transmission = 0;
+                mesh.material.transparent = true;
+                mesh.material.depthWrite = true;
+                mesh.material.opacity = 1.0;
+                mesh.material.emissiveIntensity = 0.3;
+                mesh.visible = true;
                 mesh.material.needsUpdate = true;
             });
+
+            // Update all stacks on the board
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    if (game.board[row][col].length > 0) {
+                        updateStackVisibility(row, col);
+                    }
+                }
+            }
         }
 
         function toggleLightMode() {
