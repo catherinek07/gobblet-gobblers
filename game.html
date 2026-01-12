@@ -822,6 +822,7 @@
                         mesh.material.opacity = 1.0;
                         mesh.material.emissiveIntensity = 0.3;
                         mesh.material.depthWrite = true;
+                        mesh.material.depthTest = true;
                         mesh.renderOrder = 0;
                     } else {
                         mesh.visible = false;
@@ -829,14 +830,14 @@
                     }
                 } else {
                     // See-through mode - all pieces visible
-                    // Inner pieces render AFTER outer pieces (higher renderOrder)
-                    // This makes inner pieces always visible on top
+                    // DISABLE depth test entirely to prevent z-fighting with board
                     mesh.visible = true;
-                    mesh.material.depthWrite = false;  // Disable depth write for transparency
+                    mesh.material.depthWrite = false;  // Don't write to depth buffer
+                    mesh.material.depthTest = false;   // Don't test depth - prevents flickering
 
                     // Innermost piece (index 0) gets highest render order
                     // This way small (inner) renders last, on top of medium and large
-                    mesh.renderOrder = (stackDepth - index) * 10;
+                    mesh.renderOrder = (stackDepth - index) * 10 + 100;  // Add 100 to render after board
 
                     if (isTopPiece) {
                         // Top/outermost piece - very transparent to see through
