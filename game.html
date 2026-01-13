@@ -73,6 +73,29 @@
             text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
         }
 
+        #opacity-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            pointer-events: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        body.light-mode #opacity-indicator {
+            color: #000;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.1);
+            border: 2px solid rgba(0,0,0,0.3);
+        }
+
         #controls {
             position: absolute;
             bottom: 20px;
@@ -144,6 +167,7 @@
     <div id="ui-overlay">
         <div id="turn-indicator">Orange's Turn</div>
         <div id="status-message">Select a piece to place or move</div>
+        <div id="opacity-indicator">Mode: Opaque</div>
         <div id="winner-announcement"></div>
         <div id="controls">
             <button id="reset-btn">Reset Game</button>
@@ -532,11 +556,13 @@
                 );
 
                 const color = piece.player === PLAYERS.ORANGE ? 0xff6b35 : 0x4ecdc4;
+                // Create darker base color for better contrast with selection glow
+                const darkerColor = new THREE.Color(color).multiplyScalar(0.6);
                 // Create unique material for each piece - default to opaque
                 const material = new THREE.MeshPhysicalMaterial({
-                    color: color,
-                    emissive: color,
-                    emissiveIntensity: 0.3,
+                    color: darkerColor,
+                    emissive: darkerColor,
+                    emissiveIntensity: 0.15,  // Low intensity for unselected pieces
                     transmission: 0,  // Default opaque
                     roughness: 0.1,
                     metalness: 0.1,
@@ -595,8 +621,8 @@
                     // Don't unhighlight if it's the selected piece
                     if (!game.selectedPiece || game.selectedPiece.id !== pieceId) {
                         const mesh = pieceMeshes[pieceId];
-                        if (mesh && mesh.material.emissiveIntensity > 0.3) {
-                            mesh.material.emissiveIntensity = 0.3;
+                        if (mesh && mesh.material.emissiveIntensity > 0.15) {
+                            mesh.material.emissiveIntensity = 0.15;
                         }
                     }
                 }
@@ -612,7 +638,7 @@
                         const mesh = pieceMeshes[hoveredObject.userData.pieceId];
                         // Don't change intensity if it's already selected
                         if (mesh && (!game.selectedPiece || game.selectedPiece.id !== piece.id)) {
-                            mesh.material.emissiveIntensity = 0.6;
+                            mesh.material.emissiveIntensity = 0.8;  // Hover state glow
                         }
                     }
                 }
@@ -669,7 +695,7 @@
             if (game.selectedPiece) {
                 const prevMesh = pieceMeshes[game.selectedPiece.id];
                 if (prevMesh) {
-                    prevMesh.material.emissiveIntensity = 0.3;
+                    prevMesh.material.emissiveIntensity = 0.15;
                 }
                 clearCellHighlights();
             }
@@ -677,7 +703,7 @@
             // Select new piece
             game.selectedPiece = piece;
             const mesh = pieceMeshes[pieceId];
-            mesh.material.emissiveIntensity = 0.8;
+            mesh.material.emissiveIntensity = 1.5;  // High intensity for selected piece
             updateStatusMessage("Choose where to place this piece");
 
             // Highlight valid target cells
@@ -715,6 +741,22 @@
             };
             const targetY = pieceConfig[piece.size] / 2;
 
+            // Store old position before animation starts
+            const oldPosition = piece.location === 'board' ? [...piece.boardPosition] : null;
+
+            // If in opaque mode and moving from board, reveal piece underneath immediately
+            if (isOpaque && oldPosition) {
+                const [currentRow, currentCol] = oldPosition;
+                const currentStack = game.board[currentRow][currentCol];
+                if (currentStack.length > 1) {  // There's a piece underneath
+                    const underneathPiece = currentStack[currentStack.length - 2];
+                    const underneathMesh = pieceMeshes[underneathPiece.id];
+                    underneathMesh.visible = true;
+                    underneathMesh.material.opacity = 1.0;
+                    underneathMesh.material.emissiveIntensity = 0.15;
+                }
+            }
+
             // Animate movement
             const startPos = mesh.position.clone();
             const endPos = new THREE.Vector3(targetX, targetY, targetZ);
@@ -732,9 +774,6 @@
                 if (progress >= 1) {
                     mesh.position.copy(endPos);
 
-                    // Store old position before moving
-                    const oldPosition = piece.location === 'board' ? [...piece.boardPosition] : null;
-
                     // Update game state
                     game.movePiece(piece, targetRow, targetCol);
 
@@ -747,7 +786,7 @@
                     }
 
                     // Clear selection
-                    mesh.material.emissiveIntensity = 0.3;
+                    mesh.material.emissiveIntensity = 0.15;
                     game.selectedPiece = null;
 
                     // Clear cell highlights
@@ -820,7 +859,7 @@
                     if (isTopPiece) {
                         mesh.visible = true;
                         mesh.material.opacity = 1.0;
-                        mesh.material.emissiveIntensity = 0.3;
+                        mesh.material.emissiveIntensity = 0.15;
                         mesh.material.depthWrite = true;
                         mesh.material.depthTest = true;
                         mesh.renderOrder = 0;
@@ -899,7 +938,7 @@
             function pulse() {
                 if (!game.winner) return;
                 time += 0.05;
-                mesh.material.emissiveIntensity = 0.3 + Math.sin(time) * 0.5;
+                mesh.material.emissiveIntensity = 0.5 + Math.sin(time) * 0.8;
                 requestAnimationFrame(pulse);
             }
             pulse();
@@ -942,11 +981,12 @@
 
             // Reset opacity toggle state to default (opaque)
             isOpaque = true;
+            document.getElementById('opacity-indicator').textContent = 'Mode: Opaque';
 
             // Reset all piece positions and materials
             game.pieces.forEach((piece, index) => {
                 const mesh = pieceMeshes[piece.id];
-                mesh.material.emissiveIntensity = 0.3;
+                mesh.material.emissiveIntensity = 0.15;
                 mesh.material.opacity = 1.0;
                 mesh.material.transmission = 0;  // Opaque by default
                 mesh.material.transparent = true;
@@ -983,6 +1023,10 @@
         function toggleOpacity() {
             isOpaque = !isOpaque;
 
+            // Update opacity indicator
+            document.getElementById('opacity-indicator').textContent =
+                isOpaque ? 'Mode: Opaque' : 'Mode: See-Through';
+
             // Update all stacks on the board (this handles visibility correctly)
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 3; col++) {
@@ -998,7 +1042,7 @@
                     const mesh = pieceMeshes[piece.id];
                     mesh.material.depthWrite = true;  // Reserve pieces always write depth
                     mesh.material.opacity = 1.0;
-                    mesh.material.emissiveIntensity = 0.3;
+                    mesh.material.emissiveIntensity = 0.15;
                     mesh.renderOrder = 0;
                     mesh.material.needsUpdate = true;
                 }
